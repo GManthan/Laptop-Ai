@@ -665,6 +665,8 @@
 .chat-interface.chat-only .voice-header {
   background: var(--bg-secondary);
   padding: 1rem 1.5rem;
+  position: relative;
+  z-index: 10;
 }
 
 .chat-interface.chat-only .messages {
@@ -679,7 +681,7 @@
 }
 
 .chat-active-container .chat-container {
-  height: 100%;
+  height: calc(100% - 2rem);
   border-radius: var(--border-radius-lg);
   margin: 1rem;
   background: var(--card-bg);

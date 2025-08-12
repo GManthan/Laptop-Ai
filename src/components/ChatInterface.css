@@ -642,3 +642,72 @@
     min-height: 55px;
   }
 }
+
+/* Chat Only Mode Adjustments */
+.chat-interface.chat-only {
+  max-width: none;
+  height: 100vh;
+  display: flex;
+  flex-direction: row;
+}
+
+.chat-interface.chat-only .chat-container {
+  flex: 1;
+  border-radius: 0;
+  border: none;
+  height: 100vh;
+}
+
+.chat-interface.chat-only .chat-container::before {
+  display: none;
+}
+
+.chat-interface.chat-only .voice-header {
+  background: var(--bg-secondary);
+  padding: 1rem 1.5rem;
+}
+
+.chat-interface.chat-only .messages {
+  background: var(--bg-primary);
+  padding: 1.5rem;
+}
+
+/* Call Active Mode Adjustments */
+.chat-active-container .chat-interface {
+  height: 100%;
+  max-width: none;
+}
+
+.chat-active-container .chat-container {
+  height: 100%;
+  border-radius: var(--border-radius-lg);
+  margin: 1rem;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-light);
+}
+
+.chat-active-container .voice-header {
+  background: var(--gradient-secondary);
+  backdrop-filter: blur(10px);
+}
+
+.chat-active-container .messages {
+  background: var(--bg-primary);
+}
+
+@media (max-width: 768px) {
+  .chat-interface.chat-only {
+    flex-direction: column;
+  }
+  
+  .chat-interface.chat-only .chat-container {
+    height: auto;
+    flex: 1;
+  }
+  
+  .chat-active-container .chat-container {
+    margin: 0.5rem;
+    border-radius: var(--border-radius);
+  }
+}

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatInterface.css';
 
-const ChatInterface = ({ isDarkMode }) => {
+const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -12,7 +12,7 @@ const ChatInterface = ({ isDarkMode }) => {
     {
       id: 2,
       type: 'bot',
-      text: "What will you primarily use the laptop for? (e.g., work, gaming, content creation, studying)",
+      text: "What's your name?",
       timestamp: new Date()
     }
   ]);
@@ -22,10 +22,22 @@ const ChatInterface = ({ isDarkMode }) => {
   const [micEnabled, setMicEnabled] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
   const messagesEndRef = useRef(null);
-  const [collectedInfo, setCollectedInfo] = useState({});
+  const [collectedInfo, setCollectedInfo] = useState({
+    name: 'Guest User',
+    primaryUse: '',
+    budget: '',
+    brandPreference: '',
+    screenSize: '',
+    batteryLife: '',
+    connectivity: '',
+    otherRequirements: ''
+  });
   const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [chatStuck, setChatStuck] = useState(false);
 
   const questions = [
+    "What's your name?",
     "What will you primarily use the laptop for?",
     "What's your budget range?",
     "Do you have any brand preferences?",
@@ -33,6 +45,36 @@ const ChatInterface = ({ isDarkMode }) => {
     "How important is battery life to you?",
     "Do you need specific ports or connectivity options?",
     "Any other requirements or preferences?"
+  ];
+
+  const mockRecommendations = [
+    {
+      id: 1,
+      name: "MacBook Air M3",
+      brand: "Apple",
+      price: "$1,099",
+      image: "💻",
+      specs: "M3 Chip, 8GB RAM, 256GB SSD",
+      reason: "Perfect for productivity and long battery life"
+    },
+    {
+      id: 2,
+      name: "Dell XPS 13",
+      brand: "Dell", 
+      price: "$899",
+      image: "💻",
+      specs: "Intel i5-13th Gen, 8GB RAM, 512GB SSD",
+      reason: "Great balance of performance and portability"
+    },
+    {
+      id: 3,
+      name: "ASUS ROG Strix G15",
+      brand: "ASUS",
+      price: "$1,299", 
+      image: "🎮",
+      specs: "AMD Ryzen 7, 16GB RAM, RTX 4060",
+      reason: "Excellent for gaming and content creation"
+    }
   ];
 
   const scrollToBottom = () => {
@@ -44,32 +86,36 @@ const ChatInterface = ({ isDarkMode }) => {
   }, [messages]);
 
   const simulateBotResponse = (userMessage, questionIndex) => {
+    setChatStuck(false);
     setIsTyping(true);
     setIsSpeaking(true);
     
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       const newCollectedInfo = { ...collectedInfo };
       
       switch (questionIndex) {
         case 0:
-          newCollectedInfo.primaryUse = userMessage;
+          newCollectedInfo.name = userMessage;
           break;
         case 1:
-          newCollectedInfo.budget = userMessage;
+          newCollectedInfo.primaryUse = userMessage;
           break;
         case 2:
-          newCollectedInfo.brandPreference = userMessage;
+          newCollectedInfo.budget = userMessage;
           break;
         case 3:
-          newCollectedInfo.screenSize = userMessage;
+          newCollectedInfo.brandPreference = userMessage;
           break;
         case 4:
-          newCollectedInfo.batteryLife = userMessage;
+          newCollectedInfo.screenSize = userMessage;
           break;
         case 5:
-          newCollectedInfo.connectivity = userMessage;
+          newCollectedInfo.batteryLife = userMessage;
           break;
         case 6:
+          newCollectedInfo.connectivity = userMessage;
+          break;
+        case 7:
           newCollectedInfo.otherRequirements = userMessage;
           break;
         default:
@@ -82,10 +128,15 @@ const ChatInterface = ({ isDarkMode }) => {
       const nextQuestionIndex = questionIndex + 1;
       
       if (nextQuestionIndex < questions.length) {
-        botResponse = `Perfect! ${questions[nextQuestionIndex]}`;
+        if (questionIndex === 0) {
+          botResponse = `Nice to meet you, ${userMessage}! ${questions[nextQuestionIndex]}`;
+        } else {
+          botResponse = `Perfect! ${questions[nextQuestionIndex]}`;
+        }
         setCurrentQuestion(nextQuestionIndex);
       } else {
-        botResponse = "Excellent! I have all the information I need. Based on your requirements, I can recommend some outstanding laptops that would be perfect for your needs. Would you like me to show you the top options?";
+        botResponse = `Excellent, ${newCollectedInfo.name}! I have all the information I need. Based on your requirements, I can recommend some outstanding laptops that would be perfect for your needs. Would you like me to show you the top options?`;
+        setShowRecommendations(true);
       }
       
       const botMessage = {
@@ -102,6 +153,12 @@ const ChatInterface = ({ isDarkMode }) => {
         setIsSpeaking(false);
       }, 2000);
     }, 1200 + Math.random() * 800);
+
+    setTimeout(() => {
+      if (timeout) {
+        setChatStuck(true);
+      }
+    }, 10000);
   };
 
   const handleSendMessage = () => {
@@ -115,8 +172,47 @@ const ChatInterface = ({ isDarkMode }) => {
     };
 
     setMessages(prev => [...prev, userMessage]);
-    simulateBotResponse(inputValue, currentQuestion);
+    
+    if (showRecommendations && inputValue.toLowerCase().includes('yes')) {
+      showRecommendationsList();
+    } else if (showRecommendations && inputValue.toLowerCase().includes('no')) {
+      const botMessage = {
+        id: Date.now(),
+        type: 'bot',
+        text: "No problem! Feel free to ask me any other questions about laptops or if you'd like to start over with new requirements.",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } else {
+      simulateBotResponse(inputValue, currentQuestion);
+    }
+    
     setInputValue('');
+  };
+
+  const showRecommendationsList = () => {
+    setIsTyping(true);
+    setTimeout(() => {
+      const recommendationText = `Here are my top 3 laptop recommendations for you, ${collectedInfo.name}:
+
+${mockRecommendations.map((laptop, index) => 
+`${index + 1}. ${laptop.image} **${laptop.name}** - ${laptop.price}
+   ${laptop.specs}
+   ${laptop.reason}`
+).join('\n\n')}
+
+Would you like more details about any of these laptops?`;
+
+      const botMessage = {
+        id: Date.now(),
+        type: 'bot',
+        text: recommendationText,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, botMessage]);
+      setIsTyping(false);
+    }, 1500);
   };
 
   const handleKeyPress = (e) => {
@@ -157,7 +253,38 @@ const ChatInterface = ({ isDarkMode }) => {
   };
 
   return (
-    <div className="chat-interface">
+    <div className={`chat-interface ${chatOnlyMode ? 'chat-only' : ''}`}>
+      {chatOnlyMode && (
+        <div className="user-info-panel">
+          <div className="user-profile">
+            <div className="user-avatar">👤</div>
+            <div className="user-details">
+              <h3>{collectedInfo.name || 'Guest User'}</h3>
+              <div className="user-info-grid">
+                {collectedInfo.primaryUse && <div className="info-item"><strong>Use:</strong> {collectedInfo.primaryUse}</div>}
+                {collectedInfo.budget && <div className="info-item"><strong>Budget:</strong> {collectedInfo.budget}</div>}
+                {collectedInfo.brandPreference && <div className="info-item"><strong>Brand:</strong> {collectedInfo.brandPreference}</div>}
+                {collectedInfo.screenSize && <div className="info-item"><strong>Size:</strong> {collectedInfo.screenSize}</div>}
+              </div>
+            </div>
+          </div>
+          {showRecommendations && (
+            <div className="quick-recommendations">
+              <h4>📱 Quick Recommendations</h4>
+              {mockRecommendations.slice(0, 2).map(laptop => (
+                <div key={laptop.id} className="mini-laptop-card">
+                  <span className="laptop-emoji">{laptop.image}</span>
+                  <div>
+                    <div className="laptop-name">{laptop.name}</div>
+                    <div className="laptop-price">{laptop.price}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      
       <div className="chat-container">
         <div className="voice-header">
           <div className={`voice-visualizer ${isSpeaking ? 'speaking' : ''}`}>
@@ -168,7 +295,10 @@ const ChatInterface = ({ isDarkMode }) => {
             <div className="wave"></div>
           </div>
           <div className="status-text">
-            {isTyping ? 'Thinking...' : isSpeaking ? 'Speaking...' : isInCall ? 'Connected' : 'Ready to help'}
+            {chatStuck ? '⚠️ Chat seems stuck - try refreshing' : 
+             isTyping ? 'Thinking...' : 
+             isSpeaking ? 'Speaking...' : 
+             isInCall ? 'Connected' : 'Ready to help'}
           </div>
         </div>
 

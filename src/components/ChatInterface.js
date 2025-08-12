@@ -1,18 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatInterface.css';
+import aiService from '../services/aiService';
+import ConfigPanel from './ConfigPanel';
 
-const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false }) => {
+const ChatInterface = ({ isDarkMode, isCallActive = false }) => {
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      text: "Hello! I'm your AI laptop assistant. I'm here to help you find the perfect laptop based on your specific needs and preferences. Let's start with a few questions:",
-      timestamp: new Date()
-    },
-    {
-      id: 2,
-      type: 'bot',
-      text: "What's your name?",
+      text: "Hello! I'm your AI laptop assistant. I'm here to help you find the perfect laptop based on your specific needs and preferences. What's your name?",
       timestamp: new Date()
     }
   ]);
@@ -21,6 +17,9 @@ const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [micEnabled, setMicEnabled] = useState(false);
   const [isInCall, setIsInCall] = useState(false);
+  const [aiError, setAiError] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
+  const [showConfigPanel, setShowConfigPanel] = useState(false);
   const messagesEndRef = useRef(null);
   const [collectedInfo, setCollectedInfo] = useState({
     name: 'Guest User',
@@ -34,48 +33,35 @@ const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false 
   });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const [chatStuck, setChatStuck] = useState(false);
+  const [conversationMode, setConversationMode] = useState('questioning'); // 'questioning', 'recommendations', 'general'
 
-  const questions = [
-    "What's your name?",
-    "What will you primarily use the laptop for?",
-    "What's your budget range?",
-    "Do you have any brand preferences?",
-    "What screen size do you prefer?",
-    "How important is battery life to you?",
-    "Do you need specific ports or connectivity options?",
-    "Any other requirements or preferences?"
-  ];
-
-  const mockRecommendations = [
-    {
-      id: 1,
-      name: "MacBook Air M3",
-      brand: "Apple",
-      price: "$1,099",
-      image: "💻",
-      specs: "M3 Chip, 8GB RAM, 256GB SSD",
-      reason: "Perfect for productivity and long battery life"
-    },
-    {
-      id: 2,
-      name: "Dell XPS 13",
-      brand: "Dell", 
-      price: "$899",
-      image: "💻",
-      specs: "Intel i5-13th Gen, 8GB RAM, 512GB SSD",
-      reason: "Great balance of performance and portability"
-    },
-    {
-      id: 3,
-      name: "ASUS ROG Strix G15",
-      brand: "ASUS",
-      price: "$1,299", 
-      image: "🎮",
-      specs: "AMD Ryzen 7, 16GB RAM, RTX 4060",
-      reason: "Excellent for gaming and content creation"
+  // Check AI service configuration on component mount
+  useEffect(() => {
+    const checkAIService = async () => {
+      try {
+        // Test with a simple message
+        await aiService.sendMessage('Hello', {});
+        setIsConnected(true);
+      } catch (error) {
+        console.warn('AI Service not available:', error.message);
+        setIsConnected(false);
+        if (error.message.includes('API key')) {
+          setAiError('AI service not configured. Please add your API key to use the full AI assistant.');
+        } else {
+          setAiError('AI service temporarily unavailable.');
+        }
+      }
+    };
+    
+    // Only check if we have an API key configured
+    if (process.env.REACT_APP_OPENAI_API_KEY || process.env.REACT_APP_CLAUDE_API_KEY || process.env.REACT_APP_AI_API_KEY) {
+      checkAIService();
+    } else {
+      setAiError('No AI API key configured. Add REACT_APP_OPENAI_API_KEY to your .env file.');
+      setIsConnected(false);
     }
-  ];
+  }, []);
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -85,83 +71,82 @@ const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false 
     scrollToBottom();
   }, [messages]);
 
-  const simulateBotResponse = (userMessage, questionIndex) => {
-    setChatStuck(false);
+  const handleAIResponse = async (userMessage) => {
     setIsTyping(true);
     setIsSpeaking(true);
+    setAiError(null);
     
-    const timeout = setTimeout(() => {
-      const newCollectedInfo = { ...collectedInfo };
+    try {
+      let response;
       
-      switch (questionIndex) {
-        case 0:
-          newCollectedInfo.name = userMessage;
-          break;
-        case 1:
-          newCollectedInfo.primaryUse = userMessage;
-          break;
-        case 2:
-          newCollectedInfo.budget = userMessage;
-          break;
-        case 3:
-          newCollectedInfo.brandPreference = userMessage;
-          break;
-        case 4:
-          newCollectedInfo.screenSize = userMessage;
-          break;
-        case 5:
-          newCollectedInfo.batteryLife = userMessage;
-          break;
-        case 6:
-          newCollectedInfo.connectivity = userMessage;
-          break;
-        case 7:
-          newCollectedInfo.otherRequirements = userMessage;
-          break;
-        default:
-          break;
+      // Update collected info based on conversation flow
+      const updatedInfo = updateUserInfo(userMessage);
+      
+      // Choose AI service method based on conversation mode
+      if (conversationMode === 'recommendations' && Object.values(updatedInfo).filter(v => v).length >= 4) {
+        response = await aiService.getLaptopRecommendations(updatedInfo);
+      } else {
+        response = await aiService.sendMessage(userMessage, updatedInfo);
       }
       
-      setCollectedInfo(newCollectedInfo);
-      
-      let botResponse;
-      const nextQuestionIndex = questionIndex + 1;
-      
-      if (nextQuestionIndex < questions.length) {
-        if (questionIndex === 0) {
-          botResponse = `Nice to meet you, ${userMessage}! ${questions[nextQuestionIndex]}`;
-        } else {
-          botResponse = `Perfect! ${questions[nextQuestionIndex]}`;
-        }
-        setCurrentQuestion(nextQuestionIndex);
-      } else {
-        botResponse = `Excellent, ${newCollectedInfo.name}! I have all the information I need. Based on your requirements, I can recommend some outstanding laptops that would be perfect for your needs. Would you like me to show you the top options?`;
+      // Check if we should switch to recommendations mode
+      if (Object.values(updatedInfo).filter(v => v).length >= 6) {
+        setConversationMode('recommendations');
         setShowRecommendations(true);
       }
       
       const botMessage = {
         id: Date.now(),
         type: 'bot',
-        text: botResponse,
+        text: response,
         timestamp: new Date()
       };
       
       setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
+      setIsConnected(true);
       
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      setAiError(error.message);
+      setIsConnected(false);
+      
+      // Fallback response
+      const fallbackMessage = {
+        id: Date.now(),
+        type: 'bot',
+        text: `I'm having trouble connecting to my AI service right now. ${error.message.includes('API key') ? 'Please check the API configuration.' : 'Let me try to help you anyway - what specific laptop features are you looking for?'}`,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, fallbackMessage]);
+    } finally {
+      setIsTyping(false);
       setTimeout(() => {
         setIsSpeaking(false);
       }, 2000);
-    }, 1200 + Math.random() * 800);
-
-    setTimeout(() => {
-      if (timeout) {
-        setChatStuck(true);
-      }
-    }, 10000);
+    }
+  };
+  
+  const updateUserInfo = (userMessage) => {
+    const newInfo = { ...collectedInfo };
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Smart extraction of user preferences
+    if (currentQuestion === 0 && !newInfo.name) {
+      newInfo.name = userMessage;
+    } else if (!newInfo.primaryUse && (lowerMessage.includes('gaming') || lowerMessage.includes('work') || lowerMessage.includes('school') || lowerMessage.includes('student'))) {
+      newInfo.primaryUse = userMessage;
+    } else if (!newInfo.budget && (lowerMessage.includes('$') || lowerMessage.includes('budget') || lowerMessage.includes('price'))) {
+      newInfo.budget = userMessage;
+    } else if (!newInfo.brandPreference && (lowerMessage.includes('apple') || lowerMessage.includes('dell') || lowerMessage.includes('hp') || lowerMessage.includes('lenovo'))) {
+      newInfo.brandPreference = userMessage;
+    }
+    
+    setCollectedInfo(newInfo);
+    return newInfo;
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
 
     const userMessage = {
@@ -173,47 +158,87 @@ const ChatInterface = ({ isDarkMode, chatOnlyMode = false, isCallActive = false 
 
     setMessages(prev => [...prev, userMessage]);
     
-    if (showRecommendations && inputValue.toLowerCase().includes('yes')) {
-      showRecommendationsList();
-    } else if (showRecommendations && inputValue.toLowerCase().includes('no')) {
-      const botMessage = {
-        id: Date.now(),
-        type: 'bot',
-        text: "No problem! Feel free to ask me any other questions about laptops or if you'd like to start over with new requirements.",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, botMessage]);
-    } else {
-      simulateBotResponse(inputValue, currentQuestion);
-    }
+    // Handle AI response
+    await handleAIResponse(inputValue);
     
     setInputValue('');
   };
 
-  const showRecommendationsList = () => {
-    setIsTyping(true);
-    setTimeout(() => {
-      const recommendationText = `Here are my top 3 laptop recommendations for you, ${collectedInfo.name}:
-
-${mockRecommendations.map((laptop, index) => 
-`${index + 1}. ${laptop.image} **${laptop.name}** - ${laptop.price}
-   ${laptop.specs}
-   ${laptop.reason}`
-).join('\n\n')}
-
-Would you like more details about any of these laptops?`;
-
-      const botMessage = {
+  // Clear conversation and start fresh
+  const resetConversation = () => {
+    aiService.clearHistory();
+    setMessages([
+      {
+        id: 1,
+        type: 'bot',
+        text: "Hello! I'm your AI laptop assistant. I'm here to help you find the perfect laptop based on your specific needs and preferences. What's your name?",
+        timestamp: new Date()
+      }
+    ]);
+    setCollectedInfo({
+      name: 'Guest User',
+      primaryUse: '',
+      budget: '',
+      brandPreference: '',
+      screenSize: '',
+      batteryLife: '',
+      connectivity: '',
+      otherRequirements: ''
+    });
+    setCurrentQuestion(0);
+    setShowRecommendations(false);
+    setConversationMode('questioning');
+    setAiError(null);
+  };
+  
+  // Handle API key configuration
+  const handleApiKeySubmit = async (apiKey, provider) => {
+    // Store API key locally
+    localStorage.setItem('ai_api_key', apiKey);
+    localStorage.setItem('ai_provider', provider);
+    
+    // Update service configuration
+    aiService.apiKey = apiKey;
+    if (provider === 'claude') {
+      aiService.baseUrl = 'https://api.anthropic.com/v1';
+    } else if (provider === 'openai') {
+      aiService.baseUrl = 'https://api.openai.com/v1';
+    }
+    
+    // Test the connection
+    try {
+      await aiService.sendMessage('Hello', {});
+      setIsConnected(true);
+      setAiError(null);
+      
+      // Add success message
+      const successMessage = {
         id: Date.now(),
         type: 'bot',
-        text: recommendationText,
+        text: `✅ AI service connected successfully! I'm ready to help you find the perfect laptop. What's your name?`,
         timestamp: new Date()
       };
+      setMessages(prev => [...prev, successMessage]);
       
-      setMessages(prev => [...prev, botMessage]);
-      setIsTyping(false);
-    }, 1500);
+    } catch (error) {
+      setIsConnected(false);
+      setAiError('Failed to connect with the provided API key. Please check and try again.');
+      throw error;
+    }
   };
+  
+  // Load saved API key on mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('ai_api_key');
+    const savedProvider = localStorage.getItem('ai_provider');
+    
+    if (savedApiKey) {
+      aiService.apiKey = savedApiKey;
+      if (savedProvider === 'claude') {
+        aiService.baseUrl = 'https://api.anthropic.com/v1';
+      }
+    }
+  }, []);
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -253,37 +278,7 @@ Would you like more details about any of these laptops?`;
   };
 
   return (
-    <div className={`chat-interface ${chatOnlyMode ? 'chat-only' : ''}`}>
-      {chatOnlyMode && (
-        <div className="user-info-panel">
-          <div className="user-profile">
-            <div className="user-avatar">👤</div>
-            <div className="user-details">
-              <h3>{collectedInfo.name || 'Guest User'}</h3>
-              <div className="user-info-grid">
-                {collectedInfo.primaryUse && <div className="info-item"><strong>Use:</strong> {collectedInfo.primaryUse}</div>}
-                {collectedInfo.budget && <div className="info-item"><strong>Budget:</strong> {collectedInfo.budget}</div>}
-                {collectedInfo.brandPreference && <div className="info-item"><strong>Brand:</strong> {collectedInfo.brandPreference}</div>}
-                {collectedInfo.screenSize && <div className="info-item"><strong>Size:</strong> {collectedInfo.screenSize}</div>}
-              </div>
-            </div>
-          </div>
-          {showRecommendations && (
-            <div className="quick-recommendations">
-              <h4>📱 Quick Recommendations</h4>
-              {mockRecommendations.slice(0, 2).map(laptop => (
-                <div key={laptop.id} className="mini-laptop-card">
-                  <span className="laptop-emoji">{laptop.image}</span>
-                  <div>
-                    <div className="laptop-name">{laptop.name}</div>
-                    <div className="laptop-price">{laptop.price}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+    <div className="chat-interface">
       
       <div className="chat-container">
         <div className="voice-header">
@@ -295,8 +290,9 @@ Would you like more details about any of these laptops?`;
             <div className="wave"></div>
           </div>
           <div className="status-text">
-            {chatStuck ? '⚠️ Chat seems stuck - try refreshing' : 
-             isTyping ? 'Thinking...' : 
+            {aiError ? '⚠️ AI Service Error' : 
+             !isConnected ? '🔄 Reconnecting...' :
+             isTyping ? 'AI is thinking...' : 
              isSpeaking ? 'Speaking...' : 
              isInCall ? 'Connected' : 'Ready to help'}
           </div>
@@ -326,6 +322,24 @@ Would you like more details about any of these laptops?`;
           )}
           <div ref={messagesEndRef} />
         </div>
+        
+        {aiError && (
+          <div className="ai-error-banner">
+            <div className="error-content">
+              <span className="error-icon">⚠️</span>
+              <span className="error-message">{aiError}</span>
+              {aiError.includes('API key') && (
+                <button 
+                  className="config-btn" 
+                  onClick={() => setShowConfigPanel(true)}
+                  title="Configure AI Service"
+                >
+                  ⚙️ Configure
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         
         <div className="controls-section">
           <div className="voice-controls">
@@ -365,8 +379,8 @@ Would you like more details about any of these laptops?`;
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={isInCall ? "Voice mode active - speak or type..." : "Type your message here..."}
-                disabled={isTyping}
+                placeholder={aiError ? "AI service unavailable - check configuration" : isInCall ? "Voice mode active - speak or type..." : "Type your message here..."}
+                disabled={isTyping || (aiError && !aiError.includes('API key'))}
                 rows="1"
               />
               <button 
@@ -383,6 +397,13 @@ Would you like more details about any of these laptops?`;
           </div>
         </div>
       </div>
+      
+      {showConfigPanel && (
+        <ConfigPanel 
+          onApiKeySubmit={handleApiKeySubmit}
+          onClose={() => setShowConfigPanel(false)}
+        />
+      )}
     </div>
   );
 };

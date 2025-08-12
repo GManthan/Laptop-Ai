@@ -5,7 +5,6 @@ import ChatInterface from './components/ChatInterface';
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [showChat, setShowChat] = useState(false);
-  const [showChatOnly, setShowChatOnly] = useState(false);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -31,45 +30,20 @@ function App() {
     setShowChat(false);
   };
 
-  const openChatOnly = () => {
-    setShowChatOnly(true);
-  };
 
-  const closeChatOnly = () => {
-    setShowChatOnly(false);
-  };
-
-  if (showChatOnly) {
-    return (
-      <div className={`App chat-only-mode ${isDarkMode ? 'dark' : 'light'}`}>
-        <div className="chat-only-header">
-          <button className="back-btn" onClick={closeChatOnly} title="Back to main">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
-            </svg>
-          </button>
-          <h1>AI Chat Assistant</h1>
-          <button className="theme-toggle" onClick={toggleTheme}>
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
-        </div>
-        <main className="chat-only-main">
-          <ChatInterface isDarkMode={isDarkMode} chatOnlyMode={true} />
-        </main>
-      </div>
-    );
-  }
 
   return (
     <div className={`App ${isDarkMode ? 'dark' : 'light'}`}>
-      <header className="App-header">
-        <button className="theme-toggle" onClick={toggleTheme}>
-          {isDarkMode ? '☀️' : '🌙'}
-        </button>
-      </header>
+      {!showChat && (
+        <header className="App-header">
+          <button className="theme-toggle" onClick={toggleTheme}>
+            {isDarkMode ? '☀️' : '🌙'}
+          </button>
+        </header>
+      )}
 
-      <main className="App-main">
-        {!showChat ? (
+      {!showChat ? (
+        <main className="App-main">
           <div className="ai-assistant-center">
             <div className="ai-avatar">
               <div className="ai-icon">
@@ -102,26 +76,34 @@ function App() {
                 Start a Call
               </button>
               
-              <button className="chat-mode-btn" onClick={openChatOnly}>
-                💬 Chat Mode
-              </button>
             </div>
           </div>
-        ) : (
-          <div className="chat-active-container">
-            <div className="chat-header-controls">
+        </main>
+      ) : (
+        <div className="call-mode-layout">
+          <div className="call-header">
+            <div className="call-header-left">
+              <button className="theme-toggle" onClick={toggleTheme}>
+                {isDarkMode ? '☀️' : '🌙'}
+              </button>
+            </div>
+            <div className="call-header-center">
+              <span className="call-status">🔴 Live Call Active</span>
+            </div>
+            <div className="call-header-right">
               <button className="end-call-btn" onClick={endCall}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12,9C13.66,9 15,7.66 15,6C15,4.34 13.66,3 12,3C10.34,3 9,4.34 9,6C9,7.66 10.34,9 12,9M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M16,13H8A2,2 0 0,0 6,15C6,17.22 7.79,19 10,19H14C16.21,19 18,17.22 18,15A2,2 0 0,0 16,13Z"/>
                 </svg>
                 End Call
               </button>
-              <span className="call-status">🔴 Live Call Active</span>
             </div>
-            <ChatInterface isDarkMode={isDarkMode} chatOnlyMode={false} isCallActive={true} />
           </div>
-        )}
-      </main>
+          <main className="call-main">
+            <ChatInterface isDarkMode={isDarkMode} chatOnlyMode={false} isCallActive={true} />
+          </main>
+        </div>
+      )}
     </div>
   );
 }

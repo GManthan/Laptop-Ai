@@ -112,7 +112,7 @@ function App() {
                           <div className="typing-dots">
                             <span></span><span></span><span></span>
                           </div>
-                          <p>Based on your requirements, I recommend the ASUS ROG Strix G15 with RTX 4060...</p>
+                          <p>Based on your requirements, I recommend the SkU...</p>
                         </div>
                       </div>
                     </div>

@@ -47,8 +47,8 @@ const LaptopResults = ({ preferences, onStartOver }) => {
       },
       {
         id: 3,
-        name: "ASUS ROG Strix G15",
-        brand: "ASUS",
+        name: "SkU",
+        brand: "***",
         price: 1299,
         image: "🎮",
         specs: {

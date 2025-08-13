@@ -3,7 +3,7 @@ import './App.css';
 import ChatInterface from './components/ChatInterface';
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
@@ -22,85 +22,188 @@ function App() {
     setIsDarkMode(!isDarkMode);
   };
 
-  const startCall = () => {
+  const startDemo = () => {
     setShowChat(true);
   };
 
-  const endCall = () => {
+  const endDemo = () => {
     setShowChat(false);
   };
 
-
-
   return (
     <div className={`App ${isDarkMode ? 'dark' : 'light'}`}>
-      {!showChat && (
-        <header className="App-header">
-          <button className="theme-toggle" onClick={toggleTheme}>
-            {isDarkMode ? '☀️' : '🌙'}
-          </button>
-        </header>
-      )}
-
       {!showChat ? (
-        <main className="App-main">
-          <div className="ai-assistant-center">
-            <div className="ai-avatar">
-              <div className="ai-icon">
-                <svg width="80" height="80" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,2A2,2 0 0,1 14,4C14,4.74 13.6,5.39 13,5.73V7A1,1 0 0,0 14,8H18A1,1 0 0,1 19,9V10C19,10.55 19.45,11 20,11A1,1 0 0,1 21,12A1,1 0 0,1 20,13C19.45,13 19,13.45 19,14V15A1,1 0 0,1 18,16H14A1,1 0 0,0 13,17V18.27C13.6,18.61 14,19.26 14,20A2,2 0 0,1 12,22A2,2 0 0,1 10,20C10,19.26 10.4,18.61 11,18.27V17A1,1 0 0,0 10,16H6A1,1 0 0,1 5,15V14C5,13.45 4.55,13 4,13A1,1 0 0,1 3,12A1,1 0 0,1 4,11C4.55,11 5,10.55 5,10V9A1,1 0 0,1 6,8H10A1,1 0 0,0 11,7V5.73C10.4,5.39 10,4.74 10,4A2,2 0 0,1 12,2M7.5,10A0.5,0.5 0 0,0 7,10.5A0.5,0.5 0 0,0 7.5,11A0.5,0.5 0 0,0 8,10.5A0.5,0.5 0 0,0 7.5,10M16.5,10A0.5,0.5 0 0,0 16,10.5A0.5,0.5 0 0,0 16.5,11A0.5,0.5 0 0,0 17,10.5A0.5,0.5 0 0,0 16.5,10M12,13A0.5,0.5 0 0,0 11.5,13.5A0.5,0.5 0 0,0 12,14A0.5,0.5 0 0,0 12.5,13.5A0.5,0.5 0 0,0 12,13Z"/>
-                </svg>
+        <main className="landing-page">
+          {/* Navigation */}
+          <nav className="nav-header">
+            <div className="nav-container">
+              <div className="brand">
+                <div className="brand-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                  </svg>
+                </div>
+                <span className="brand-name">LaptopAI</span>
               </div>
-              <div className="ai-pulse-rings">
-                <div className="pulse-ring"></div>
-                <div className="pulse-ring"></div>
-                <div className="pulse-ring"></div>
-              </div>
-            </div>
-            
-            <div className="ai-info">
-              <h1>AI Laptop Assistant</h1>
-              <p>Your intelligent laptop buying companion</p>
-              <div className="ai-features">
-                <div className="feature">🎯 Personalized Recommendations</div>
-                <div className="feature">🗣️ Voice Interaction</div>
-                <div className="feature">📊 Smart Comparison</div>
-              </div>
-            </div>
-
-            <div className="action-buttons">
-              <button className="start-call-btn" onClick={startCall}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15,12A3,3 0 0,0 18,9A3,3 0 0,0 15,6A3,3 0 0,0 12,9A3,3 0 0,0 15,12M6,10V7H4V10H1V12H4V15H6V12H9V10M15,16C12.33,16 7,17.33 7,20V22H23V20C23,17.33 17.67,16 15,16Z"/>
-                </svg>
-                Start a Call
-              </button>
-              
-            </div>
-          </div>
-        </main>
-      ) : (
-        <div className="call-mode-layout">
-          <div className="call-header">
-            <div className="call-header-left">
               <button className="theme-toggle" onClick={toggleTheme}>
                 {isDarkMode ? '☀️' : '🌙'}
               </button>
             </div>
-            <div className="call-header-center">
-              <span className="call-status">🔴 Live Call Active</span>
+          </nav>
+
+          {/* Hero Section */}
+          <section className="hero-section">
+            <div className="hero-container">
+              <div className="hero-content">
+                <div className="hero-badge">
+                  <span className="badge-text">✨ Powered by Advanced AI</span>
+                </div>
+                <h1 className="hero-title">
+                  The Future of 
+                  <span className="gradient-text"> Laptop Shopping</span>
+                </h1>
+                <p className="hero-subtitle">
+                  Revolutionizing how customers discover, compare, and purchase laptops through 
+                  intelligent AI conversations and personalized recommendations.
+                </p>
+                <div className="hero-stats">
+                  <div className="stat">
+                    <div className="stat-number">95%</div>
+                    <div className="stat-label">Accuracy</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-number">3x</div>
+                    <div className="stat-label">Faster</div>
+                  </div>
+                  <div className="stat">
+                    <div className="stat-number">24/7</div>
+                    <div className="stat-label">Available</div>
+                  </div>
+                </div>
+                <div className="hero-actions">
+                  <button className="demo-btn primary" onClick={startDemo}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+                    </svg>
+                    Experience Live Demo
+                  </button>
+                  <button className="demo-btn secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z" />
+                    </svg>
+                    View Presentation
+                  </button>
+                </div>
+              </div>
+              <div className="hero-visual">
+                <div className="ai-showcase">
+                  <div className="showcase-card main">
+                    <div className="card-header">
+                      <div className="ai-indicator">
+                        <div className="ai-dot"></div>
+                        <span>AI Assistant</span>
+                      </div>
+                      <div className="status-badge">Active</div>
+                    </div>
+                    <div className="card-content">
+                      <div className="message-preview">
+                        <div className="user-message">"I need a gaming laptop under $1500"</div>
+                        <div className="ai-response">
+                          <div className="typing-dots">
+                            <span></span><span></span><span></span>
+                          </div>
+                          <p>Based on your requirements, I recommend the ASUS ROG Strix G15 with RTX 4060...</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="showcase-card secondary">
+                    <div className="metric">
+                      <div className="metric-value">127%</div>
+                      <div className="metric-label">ROI Increase</div>
+                    </div>
+                  </div>
+                  <div className="showcase-card tertiary">
+                    <div className="feature-list">
+                      <div className="feature-item">✓ Voice Recognition</div>
+                      <div className="feature-item">✓ Smart Recommendations</div>
+                      <div className="feature-item">✓ Price Comparison</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="call-header-right">
-              <button className="end-call-btn" onClick={endCall}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12,9C13.66,9 15,7.66 15,6C15,4.34 13.66,3 12,3C10.34,3 9,4.34 9,6C9,7.66 10.34,9 12,9M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M16,13H8A2,2 0 0,0 6,15C6,17.22 7.79,19 10,19H14C16.21,19 18,17.22 18,15A2,2 0 0,0 16,13Z"/>
-                </svg>
-                End Call
-              </button>
+          </section>
+
+          {/* Value Proposition */}
+          <section className="value-section">
+            <div className="value-container">
+              <div className="section-header">
+                <h2>Why LaptopAI Changes Everything</h2>
+                <p>Transform your laptop retail business with AI-powered customer assistance</p>
+              </div>
+              <div className="value-grid">
+                <div className="value-card">
+                  <div className="value-icon">🎯</div>
+                  <h3>Precision Matching</h3>
+                  <p>Advanced algorithms analyze customer needs and match them with perfect laptop specifications</p>
+                  <div className="value-metric">95% satisfaction rate</div>
+                </div>
+                <div className="value-card">
+                  <div className="value-icon">⚡</div>
+                  <h3>Instant Expertise</h3>
+                  <p>Every customer gets expert-level guidance instantly, no waiting for human specialists</p>
+                  <div className="value-metric">3x faster decisions</div>
+                </div>
+                <div className="value-card">
+                  <div className="value-icon">💰</div>
+                  <h3>Revenue Growth</h3>
+                  <p>Increase conversion rates and average order value through intelligent upselling</p>
+                  <div className="value-metric">+127% ROI</div>
+                </div>
+                <div className="value-card">
+                  <div className="value-icon">🌐</div>
+                  <h3>Scale Globally</h3>
+                  <p>Serve unlimited customers simultaneously with consistent quality across all channels</p>
+                  <div className="value-metric">24/7 availability</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      ) : (
+        <div className="demo-mode">
+          <div className="demo-header">
+            <div className="demo-nav">
+              <div className="demo-brand">
+                <div className="brand-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12,2L13.09,8.26L22,9L13.09,9.74L12,16L10.91,9.74L2,9L10.91,8.26L12,2Z"/>
+                  </svg>
+                </div>
+                <span>LaptopAI Demo</span>
+              </div>
+              <div className="demo-controls">
+                <button className="theme-toggle" onClick={toggleTheme}>
+                  {isDarkMode ? '☀️' : '🌙'}
+                </button>
+                <button className="end-demo-btn" onClick={endDemo}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                  </svg>
+                  Exit Demo
+                </button>
+              </div>
+            </div>
+            <div className="demo-status">
+              <div className="status-indicator">
+                <div className="live-dot"></div>
+                <span>Live Demo Active</span>
+              </div>
             </div>
           </div>
-          <main className="call-main">
-            <ChatInterface isDarkMode={isDarkMode} chatOnlyMode={false} isCallActive={true} />
+          <main className="demo-main">
+            <ChatInterface isDarkMode={isDarkMode} onMinimize={endDemo} />
           </main>
         </div>
       )}

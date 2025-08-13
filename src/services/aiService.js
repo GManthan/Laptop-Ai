@@ -18,49 +18,14 @@ class AIService {
   }
 
   async sendMessage(message, userInfo = {}) {
-    if (!this.apiKey) {
-      throw new Error('AI API key not configured. Please set REACT_APP_OPENAI_API_KEY in your environment.');
-    }
-
+    // Always use local fallback first, no API key required
     try {
-      // Build conversation context
-      const messages = [
-        { role: 'system', content: this.systemPrompt },
-        ...this.conversationHistory,
-        { role: 'user', content: this.buildContextualMessage(message, userInfo) }
-      ];
-
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: this.model,
-          messages: messages,
-          max_tokens: 500,
-          temperature: 0.7,
-          stream: false,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`AI API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices[0]?.message?.content?.trim();
-
-      if (!aiResponse) {
-        throw new Error('Invalid response from AI service');
-      }
-
+      const localResponse = await this.sendMessageLocal(message, userInfo);
+      
       // Update conversation history
       this.conversationHistory.push(
         { role: 'user', content: message },
-        { role: 'assistant', content: aiResponse }
+        { role: 'assistant', content: localResponse }
       );
 
       // Keep conversation history manageable (last 20 messages)
@@ -68,10 +33,66 @@ class AIService {
         this.conversationHistory = this.conversationHistory.slice(-20);
       }
 
-      return aiResponse;
+      return localResponse;
     } catch (error) {
-      console.error('AI Service Error:', error);
-      throw error;
+      console.error('Local AI Service Error:', error);
+      
+      // If local fails and we have an API key, try external service
+      if (this.apiKey) {
+        try {
+          // Build conversation context
+          const messages = [
+            { role: 'system', content: this.systemPrompt },
+            ...this.conversationHistory,
+            { role: 'user', content: this.buildContextualMessage(message, userInfo) }
+          ];
+
+          const response = await fetch(`${this.baseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${this.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: this.model,
+              messages: messages,
+              max_tokens: 500,
+              temperature: 0.7,
+              stream: false,
+            }),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`AI API Error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+          }
+
+          const data = await response.json();
+          const aiResponse = data.choices[0]?.message?.content?.trim();
+
+          if (!aiResponse) {
+            throw new Error('Invalid response from AI service');
+          }
+
+          // Update conversation history
+          this.conversationHistory.push(
+            { role: 'user', content: message },
+            { role: 'assistant', content: aiResponse }
+          );
+
+          // Keep conversation history manageable (last 20 messages)
+          if (this.conversationHistory.length > 20) {
+            this.conversationHistory = this.conversationHistory.slice(-20);
+          }
+
+          return aiResponse;
+        } catch (apiError) {
+          console.error('External AI Service Error:', apiError);
+          throw apiError;
+        }
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -189,31 +210,115 @@ class AIService {
 
   // Get laptop recommendations based on user preferences
   async getLaptopRecommendations(userPreferences) {
-    const prompt = `Based on the following user preferences, recommend 3 specific laptop models with current prices and detailed reasons:
+    // Generate local recommendations based on user preferences
+    return this.generateLocalRecommendations(userPreferences);
+  }
 
-User Preferences:
-- Primary use: ${userPreferences.primaryUse || 'General use'}
-- Budget: ${userPreferences.budget || 'Not specified'}
-- Brand preference: ${userPreferences.brandPreference || 'No preference'}
-- Screen size: ${userPreferences.screenSize || 'Any size'}
-- Battery life importance: ${userPreferences.batteryLife || 'Moderate'}
-- Connectivity needs: ${userPreferences.connectivity || 'Standard ports'}
-- Other requirements: ${userPreferences.otherRequirements || 'None'}
-
-Please format your response with:
-1. **Laptop Name** - Price
-   - Key specs
-   - Why it's perfect for their needs
-
-2. **Laptop Name** - Price
-   - Key specs  
-   - Why it's perfect for their needs
-
-3. **Laptop Name** - Price
-   - Key specs
-   - Why it's perfect for their needs`;
-
-    return await this.sendMessage(prompt);
+  generateLocalRecommendations(userPreferences) {
+    const { primaryUse } = userPreferences;
+    const lowerUse = (primaryUse || '').toLowerCase();
+    
+    let recommendations = [];
+    
+    if (lowerUse.includes('gaming')) {
+      recommendations = [
+        {
+          name: "Gaming Laptop Pro - SKU: LP-GM-001",
+          price: "$1,299",
+          specs: "AMD Ryzen 7, RTX 4060, 16GB RAM, 512GB SSD",
+          reason: "Excellent gaming performance with high refresh rate display and powerful cooling system."
+        },
+        {
+          name: "Gaming Laptop Standard - SKU: LP-GM-002",
+          price: "$999",
+          specs: "Intel i7, RTX 4050, 16GB RAM, 512GB SSD",
+          reason: "Great value gaming laptop with solid performance for most modern games."
+        },
+        {
+          name: "Gaming Laptop Elite - SKU: LP-GM-003",
+          price: "$1,799",
+          specs: "Intel i9, RTX 4070, 32GB RAM, 1TB SSD",
+          reason: "Premium gaming experience with top-tier performance and premium build quality."
+        }
+      ];
+    } else if (lowerUse.includes('work') || lowerUse.includes('business')) {
+      recommendations = [
+        {
+          name: "Business Ultrabook Compact - SKU: LP-BZ-001",
+          price: "$899",
+          specs: "Intel i5, 8GB RAM, 256GB SSD, 13.3\" display",
+          reason: "Ultra-portable with excellent build quality and long battery life for business use."
+        },
+        {
+          name: "Business Laptop Professional - SKU: LP-BZ-002",
+          price: "$1,399",
+          specs: "Intel i7, 16GB RAM, 512GB SSD, 14\" display",
+          reason: "Business-grade reliability with excellent keyboard and security features."
+        },
+        {
+          name: "Business Laptop Premium - SKU: LP-BZ-003",
+          price: "$1,199",
+          specs: "ARM Processor, 8GB RAM, 256GB SSD, 13.6\" display",
+          reason: "Exceptional performance per watt with incredible battery life and premium design."
+        }
+      ];
+    } else if (lowerUse.includes('student') || lowerUse.includes('school')) {
+      recommendations = [
+        {
+          name: "Student Laptop Budget - SKU: LP-ST-001",
+          price: "$549",
+          specs: "AMD Ryzen 5, 8GB RAM, 256GB SSD, 15.6\" display",
+          reason: "Great value for students with solid performance for coursework and multimedia."
+        },
+        {
+          name: "Student Laptop Standard - SKU: LP-ST-002",
+          price: "$679",
+          specs: "Intel i5, 8GB RAM, 512GB SSD, 15.6\" display",
+          reason: "Well-rounded laptop perfect for school work with good battery life and display."
+        },
+        {
+          name: "Student Laptop Premium - SKU: LP-ST-003",
+          price: "$999",
+          specs: "ARM Processor, 8GB RAM, 256GB SSD, 13.3\" display",
+          reason: "Long-lasting battery and excellent performance for students with premium features."
+        }
+      ];
+    } else {
+      // General use recommendations
+      recommendations = [
+        {
+          name: "General Purpose Laptop Standard - SKU: LP-GP-001",
+          price: "$679",
+          specs: "Intel i5, 8GB RAM, 512GB SSD, 15.6\" display",
+          reason: "Versatile laptop perfect for everyday tasks with good performance and value."
+        },
+        {
+          name: "General Purpose Laptop Budget - SKU: LP-GP-002",
+          price: "$449",
+          specs: "Intel i3, 8GB RAM, 256GB SSD, 15.6\" display",
+          reason: "Budget-friendly option for basic computing needs and web browsing."
+        },
+        {
+          name: "General Purpose Laptop Performance - SKU: LP-GP-003",
+          price: "$599",
+          specs: "AMD Ryzen 5, 8GB RAM, 512GB SSD, 15.6\" display",
+          reason: "Good balance of performance and price for general productivity tasks."
+        }
+      ];
+    }
+    
+    // Format recommendations
+    let response = `Based on your preferences, here are my top 3 laptop recommendations:\n\n`;
+    
+    recommendations.forEach((laptop, index) => {
+      response += `${index + 1}. **${laptop.name}** - ${laptop.price}\n`;
+      response += `   - ${laptop.specs}\n`;
+      response += `   - ${laptop.reason}\n\n`;
+    });
+    
+    response += `Would you like more details about any of these laptops, or would you like me to adjust the recommendations based on different criteria?`;
+    
+    return response;
   }
 
   clearHistory() {
